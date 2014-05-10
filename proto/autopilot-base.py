@@ -2,6 +2,8 @@
 
 # File: autopilot-base.py
 
+# Author: Marc Feeley
+
 
 from collections import deque
 import socket

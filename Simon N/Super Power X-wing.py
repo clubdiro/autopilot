@@ -221,8 +221,6 @@ def maintain_norestart():
 
 def maintain():
     maintain_norestart()
-    if instruments.mph < 1 and instruments.alt_agl < 50:
-        raise SimulationStart()  # detect when plane crashes and is reset
 
 
 def autopilot():
@@ -371,7 +369,7 @@ def fly():
         maintain()
     
     print("atteinte du 500 pied, attente de remonter vers 900 pieds")    
-    while instruments.alt_agl<900:
+    while instruments.alt_agl<700:
         if instruments.roll > 0:
             controls.ailrn = -0.1
         elif instruments.roll < 0:
@@ -394,54 +392,30 @@ def fly():
             controls.ailrn = -0.1
         elif instruments.roll < 0:
             controls.ailrn = 0.1
-        maintain()
+        maintain_norestart()
     
     
     print("Pray for success :S  !!!")    
     controls.elev = 1
-    controls.thro1 = 1
-    controls.thro2 = 1
-    controls.thro3 = 1
-    controls.thro4 = 1
+    controls.thro1 = 0.5
+    controls.thro2 =0.5
+    controls.thro3 = 0.5
+    controls.thro4 = 0.5    
+    while instruments.alt_agl > 45:
+        controls.elev = 0.5
+        maintain()
     
-    if instruments.alt_agl < 100 :     
-        while True:
-           if instruments.alt_alg < 100: 
-               controls.elev = 0.2
-           else:
-                controls.elev = -0.1
-           maintain()
-    
-        
-    
-    
-            
+    while True:
+        if instruments.roll > 0:
+            controls.ailrn = -0.1
+        elif instruments.roll < 0:
+            controls.ailrn = 0.1        
+        if instruments.alt_agl < 100: 
+           controls.elev = 0.4
+        else:
+            controls.elev = -0.4
+        maintain()
 
-
-     
-    
-    
-    
-   # while abs(hding_diff(inv_hding, instruments.hding_true)) > 2:
-    #    if hding_diff(inv_hding, instruments.hding_true) > 0:
-     #       controls.ailrn = (+20 - instruments.roll) / 40
-      #  else:
-       #     controls.ailrn = (-20 - instruments.roll) / 40
-        #maintain()
-
-    #print('maintain heading')
-
-  #  controls.thro1 = 0.4 # ease off on throttle
-   # controls.thro2 = 0.4
-   # controls.thro3 = 0.4
-   # controls.thro4 = 0.4
-#
-   # controls.elev = 0 # neutral elevator
-
-   # while True:
-   #     d = hding_diff(inv_hding, instruments.hding_true)
-   #     controls.ailrn = d / 90
-   #     maintain()
 
     
 if __name__ == '__main__':

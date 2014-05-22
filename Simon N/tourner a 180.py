@@ -9,7 +9,7 @@ import struct
 import sys
 import copy
 import time
-#from flightinfo import DashBoard
+from flightinfo import DashBoard
 
 
 AUTOPILOT_IP   = '0.0.0.0'
@@ -92,12 +92,12 @@ def update_ui(data):
         try:
             dash_elems[0].update_all(data)
         except:
-            print 'GUI error.'
+            print ('GUI error.')
             dash_elems = []
         end = platform_time()-start
         #Performance test.
         if len(test) == 0:
-            print 'Running UI performance test, do not resize or move the UI.'
+            print ('Running UI performance test, do not resize or move the UI.')
         if end > 0.001 and len(test) < 30:
             test.append(end)
         elif len(test) == 30:
@@ -110,7 +110,7 @@ def update_ui(data):
             tar.write(''.join(sep))
             tar.write('\n')
             tar.close()
-            print 'Performance test completed. Results in \'benchmark.txt\''
+            print ('Performance test completed. Results in \'benchmark.txt\'')
             test.append(0)
 
 msg_label_struct = struct.Struct('=5s')
@@ -137,7 +137,7 @@ def receive():
 
     (label,) = msg_label_struct.unpack_from(msg, 0)
 
-    if label == 'DATA@':
+    if label == b'DATA@':
         i = msg_label_struct.size;
         while i < n:
             data = data_packet_struct.unpack_from(msg, i)
@@ -203,7 +203,7 @@ def send():
     c = controls
 
     packet = controls_struct.pack(
-                 'DATA@',
+                 b'DATA@',
                  14, c.gear, c.wbrak, c.lbrak, c.rbrak, 0, 0, 0, 0,
                   8, c.elev, c.ailrn, c.ruddr, -999, c.nose, -999, -999, -999,
                  11, -999, -999, -999, -999, c.nose, -999, -999, -999,
@@ -229,7 +229,7 @@ def autopilot():
     
     while True:
 
-        print '*** start of simulation ***'
+        print ('*** start of simulation ***')
 
         controls = Controls()
 
@@ -238,7 +238,7 @@ def autopilot():
 
         try:
             fly()
-        except SimulationStart, socket.error:
+        except:
             pass
 
 
@@ -254,7 +254,7 @@ def turn(roll):
 
 def fly():
 
-    print 'applying full throttle'
+    print ('applying full throttle')
 
     controls.thro1 = 1 # full throttle
     controls.thro2 = 1
@@ -267,7 +267,7 @@ def fly():
     while instruments.kias < 160: # wait to reach rotate speed
         maintain_norestart()
 
-    print 'starting takeoff rotation'
+    print ('starting takeoff rotation')
 
     takeoff_hding = instruments.hding_true
     inv_hding = (takeoff_hding + 180) % 360 # inverse heading
@@ -277,14 +277,14 @@ def fly():
     while instruments.kias < 180:
         maintain()
 
-    print 'end of takeoff rotation'
+    print ('end of takeoff rotation')
 
     controls.elev = 0.3 # ease off on elevator
 
     while instruments.alt_agl < 100:
         maintain()
 
-    print 'raising landing gear'
+    print ('raising landing gear')
 
     controls.gear = 0 # raise landing gear
 
@@ -293,7 +293,7 @@ def fly():
     while instruments.alt_agl < 1000:
         maintain()
 
-    print 'reduce throttle and wait until 2000 feet'
+    print ('reduce throttle and wait until 2000 feet')
 
     controls.thro1 = 0.4 # ease off on throttle
     controls.thro2 = 0.4
@@ -303,28 +303,53 @@ def fly():
     while instruments.alt_agl < 2000:
         maintain()
 
-    print 'leveling off'
+    print ('leveling off')
 
     controls.elev = -0.2 # push on elevator to level off
 
     while instruments.pitch > 0:
         maintain()
 
-    print 'do a half turn'
+    print ('do a half turn')
 
     while abs(hding_diff(instruments.hding_true, inv_hding)) > 2:
         turn(-30)
-        maintain()
+        maintain_norestart()
 
-    print 'maintain heading'
+    print ('maintain heading')
 
     controls.elev = 0 # neutral elevator
+    
+    
+###########################################################################################
+###                              C'est icitte la magie                             ########
+###########################################################################################   
 
-    while True:
+# jusqu'a temps que la latitude soit en bas de 47.5, utiliser maintain_norestart() pour pas que ca plante
+
+    while instruments.lat < 47.5:
         err = hding_diff(instruments.hding_true, inv_hding)
         turn(-err)
-        maintain()
-
+        maintain_norestart()
+    print ('do a half turn')
+    
+    
+    #### Fait un demi tour, ne pas oublier de changer inv_hding pour takeoff_hding (nous voulons revenir en sens de depart)
+    while abs(hding_diff(instruments.hding_true, takeoff_hding)) > 2:
+            turn(-30)
+            maintain_norestart() 
+    
+    
+    #### garde le cap, ne pas oublier takeoff_hding
+    print ('maintain heading')
+    while True:
+            err = hding_diff(instruments.hding_true, takeoff_hding)
+            turn(-err)
+            maintain_norestart()
+    
+    
+    
+    #### ATTERRISSAGE A DEVELOPPER  #####
     
 if __name__ == '__main__':
     #Uncomment the next line if you want to run with the UI

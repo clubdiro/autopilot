@@ -9,7 +9,7 @@ import struct
 import sys
 import copy
 import time
-#from flightinfo import DashBoard
+from flightinfo import DashBoard
 
 
 AUTOPILOT_IP   = '0.0.0.0'
@@ -320,11 +320,34 @@ def fly():
 
     controls.elev = 0 # neutral elevator
 
-    while True:
+    while instruments.lat < 47.50:
         err = hding_diff(instruments.hding_true, inv_hding)
         turn(-err)
         maintain()
+        
+    print 'leveling off'
+        
+    controls.elev = -0.2 # push on elevator to level off  
 
+    while instruments.pitch > 0:
+        maintain()
+        
+    print 'go back'
+    
+    inv_hding = (instruments.hding_true+ 180) % 360
+
+    while abs(hding_diff(instruments.hding_true, inv_hding)) > 2:
+        turn(-30)
+        maintain()
+
+    print 'maintain heading'
+    
+    controls.elev = 0 # neutral elevator
+    
+    while True:
+        err = hding_diff(instruments.hding_true, inv_hding)
+        turn(-err)
+        maintain_norestart()    
     
 if __name__ == '__main__':
     #Uncomment the next line if you want to run with the UI

@@ -1,6 +1,8 @@
 #! /usr/bin/python
 
-# File: autopilot-base-180.py
+# File: autopilot.py
+
+# Version 1
 
 
 from collections import deque
@@ -9,10 +11,10 @@ import struct
 import sys
 import copy
 import time
-#from flightinfo import DashBoard
+from flightinfo import DashBoard
 
 
-AUTOPILOT_IP   = '0.0.0.0'
+AUTOPILOT_IP   = '127.0.0.1'
 AUTOPILOT_PORT = 50000
 XPLANE_PORT    = 49000
 
@@ -92,12 +94,12 @@ def update_ui(data):
         try:
             dash_elems[0].update_all(data)
         except:
-            print 'GUI error.'
+            print ('GUI error.')
             dash_elems = []
         end = platform_time()-start
         #Performance test.
         if len(test) == 0:
-            print 'Running UI performance test, do not resize or move the UI.'
+            print ('Running UI performance test, do not resize or move the UI.')
         if end > 0.001 and len(test) < 30:
             test.append(end)
         elif len(test) == 30:
@@ -110,7 +112,7 @@ def update_ui(data):
             tar.write(''.join(sep))
             tar.write('\n')
             tar.close()
-            print 'Performance test completed. Results in \'benchmark.txt\''
+            print ('Performance test completed. Results in \'benchmark.txt\'')
             test.append(0)
 
 msg_label_struct = struct.Struct('=5s')
@@ -137,7 +139,7 @@ def receive():
 
     (label,) = msg_label_struct.unpack_from(msg, 0)
 
-    if label == 'DATA@':
+    if label == b'DATA@':
         i = msg_label_struct.size;
         while i < n:
             data = data_packet_struct.unpack_from(msg, i)
@@ -203,7 +205,7 @@ def send():
     c = controls
 
     packet = controls_struct.pack(
-                 'DATA@',
+                 b'DATA@',
                  14, c.gear, c.wbrak, c.lbrak, c.rbrak, 0, 0, 0, 0,
                   8, c.elev, c.ailrn, c.ruddr, -999, c.nose, -999, -999, -999,
                  11, -999, -999, -999, -999, c.nose, -999, -999, -999,
@@ -219,8 +221,6 @@ def maintain_norestart():
 
 def maintain():
     maintain_norestart()
-    if instruments.mph < 1 and instruments.alt_agl < 50:
-        raise SimulationStart()  # detect when plane crashes and is reset
 
 
 def autopilot():
@@ -229,7 +229,7 @@ def autopilot():
     
     while True:
 
-        print '*** start of simulation ***'
+        print('*** start of simulation ***')
 
         controls = Controls()
 
@@ -238,92 +238,184 @@ def autopilot():
 
         try:
             fly()
-        except SimulationStart, socket.error:
+        except (SimulationStart, socket.error):
             pass
 
 
 def hding_diff(hding1, hding2):
-    return (hding1 - hding2 + 180) % 360 - 180
-
-
-def turn(roll):
-    err = roll - instruments.roll
-    controls.ailrn = err / 50
-    controls.elev = -instruments.roll / 100
-
+    return (540 + hding1 - hding2) % 360 - 180
 
 def fly():
 
-    print 'applying full throttle'
+    inv_hding = (instruments.hding_true + 180) % 360 # inverse heading
+
+    print('applying full throttle')
 
     controls.thro1 = 1 # full throttle
     controls.thro2 = 1
     controls.thro3 = 1
     controls.thro4 = 1
 
-    controls.ruddr = -0.0045 # left rudder
-    controls.ailrn = -0.015 # slight left roll
+    controls.ruddr = -0.0005 # left rudder
 
     while instruments.kias < 160: # wait to reach rotate speed
         maintain_norestart()
 
-    print 'starting takeoff rotation'
-
-    takeoff_hding = instruments.hding_true
-    inv_hding = (takeoff_hding + 180) % 360 # inverse heading
+    print('starting takeoff rotation')
 
     controls.elev = 0.5 # up elevator
 
-    while instruments.kias < 180:
+    while instruments.kias < 200:
         maintain()
 
-    print 'end of takeoff rotation'
-
-    controls.elev = 0.3 # ease off on elevator
-
+    print('end of takeoff rotation')
+    
     while instruments.alt_agl < 100:
         maintain()
 
-    print 'raising landing gear'
-
+    print('raising landing gear')
     controls.gear = 0 # raise landing gear
-
-    controls.elev = 0 # neutral elevator
-
-    while instruments.alt_agl < 1000:
+    controls.elev = 0.4
+    controls.ruddr = -0.05
+    controls.ailrn = 0.2
+    
+    print("maintenir")
+    while instruments.alt_agl < 1125:
+        if instruments.roll < 0 :
+            controls.thro1 = 1.0 # ease off on throttle
+            controls.thro2 = 1.0
+            controls.thro3 = 0.9
+            controls.thro4 = 0.9  
+        else:
+            controls.thro1 = 0.9 # ease off on throttle
+            controls.thro2 = 0.9
+            controls.thro3 = 1.0
+            controls.thro4 = 1.0       
         maintain()
 
-    print 'reduce throttle and wait until 2000 feet'
+    print('level off')
+    controls.ruddr = 0
+    controls.thro1 = 0.7 # ease off on throttle
+    controls.thro2 = 0.7
+    controls.thro3 = 0.7
+    controls.thro4 = 0.7
 
-    controls.thro1 = 0.4 # ease off on throttle
-    controls.thro2 = 0.4
-    controls.thro3 = 0.4
-    controls.thro4 = 0.4
+    controls.elev = 0.1 # gentle pull on elevator
 
-    while instruments.alt_agl < 2000:
+
+    while instruments.pitch > 7:
         maintain()
-
-    print 'leveling off'
-
-    controls.elev = -0.2 # push on elevator to level off
-
+        
+    controls.elev = 0.3
+    controls.thro1 = 1 # ease off on throttle
+    controls.thro2 = 1
+    controls.thro3 = 1
+    controls.thro4 = 1
+    
+    
+    while instruments.pitch > 6:
+        if instruments.roll < 0 :
+            controls.thro1 = 1 
+            controls.thro2 = 1
+            controls.thro3 = 0.9
+            controls.thro4 = 0.9
+        else:
+            controls.thro1 = 0.9 # ease off on throttle
+            controls.thro2 = 0.9
+            controls.thro3 = 1
+            controls.thro4 = 1       
+        maintain()    
+        
+# TOURNER ICI
+    print("debut de manoeuvre a 180, stabilise a +1 35")
+    controls.thro1 = 0.5
+    controls.thro2 = 0.5
+    controls.thro3 = 0.5
+    controls.thro4 = 0.5
+    controls.elev = 0.6
+    controls.ruddr = -0.2
+    while instruments.hding_true >35 :
+        if instruments.roll >-30:
+            controls.ailrn = -0.2
+        elif instruments.roll<-30:
+            controls.ailrn = 0.2
+        maintain()
+    
+    print('manoeuvre de stabilisation')    
+    controls.ruddr=0
+    controls.ailrn = 0.08
+    controls.elev = 0.3
+    
+    while instruments.hding_true >2:
+        maintain()  
+    controls.elev = -0.5
+    controls.ailrn = 0.12
     while instruments.pitch > 0:
         maintain()
 
-    print 'do a half turn'
-
-    while abs(hding_diff(instruments.hding_true, inv_hding)) > 2:
-        turn(-30)
+    controls.elev = -0.05
+    controls.ailrn = 0.3
+    
+    while instruments.roll < 0:
         maintain()
-
-    print 'maintain heading'
-
-    controls.elev = 0 # neutral elevator
-
+    
+    print("stabilisation et descente vers 500 pieds")
+        
+    while instruments.alt_agl>700:
+        if instruments.roll > 0:
+            controls.ailrn = -0.1
+        else:
+            controls.ailrn = 0.1
+        maintain()
+    
+    print("atteinte du 500 pied, attente de remonter vers 900 pieds")    
+    while instruments.alt_agl<700:
+        if instruments.roll > 0:
+            controls.ailrn = -0.1
+        elif instruments.roll < 0:
+            controls.ailrn = 0.1
+        maintain()    
+        if instruments.pitch < 0:
+            controls.elev = 0.3
+        else:
+            controls.elev = -0.1
+        maintain()
+    
+    print("couper les moteurs. Debut de manoeuvre vers 50 pieds")
+    controls.thro1 = 0
+    controls.thro2 = 0
+    controls.thro3 = 0
+    controls.thro4 = 0
+    
+    while instruments.alt_agl > 215:
+        if instruments.roll > 0:
+            controls.ailrn = -0.1
+        elif instruments.roll < 0:
+            controls.ailrn = 0.1
+        maintain_norestart()
+    
+    
+    print("Pray for success :S  !!!")    
+    controls.elev = 1
+    controls.thro1 = 0.5
+    controls.thro2 =0.5
+    controls.thro3 = 0.5
+    controls.thro4 = 0.5    
+    while instruments.alt_agl > 45:
+        controls.elev = 0.5
+        maintain()
+    
     while True:
-        err = hding_diff(instruments.hding_true, inv_hding)
-        turn(-err)
+        if instruments.roll > 0:
+            controls.ailrn = -0.1
+        elif instruments.roll < 0:
+            controls.ailrn = 0.1        
+        if instruments.alt_agl < 100: 
+           controls.elev = 0.4
+        else:
+            controls.elev = -0.4
         maintain()
+
 
     
 if __name__ == '__main__':

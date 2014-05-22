@@ -2,6 +2,10 @@
 
 # File: autopilot-base.py
 
+# Author: Marc Feeley (c) 2014
+
+# coucou!
+
 
 from collections import deque
 import socket
@@ -9,7 +13,7 @@ import struct
 import sys
 import copy
 import time
-from flightinfo import DashBoard
+#from flightinfo import DashBoard
 
 
 AUTOPILOT_IP   = '0.0.0.0'

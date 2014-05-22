@@ -1,0 +1,7 @@
+utiliser piste 16L (à gauche dans les options)
+
+fait un 180 au depart
+passe à 500 pieds rendu à la piste
+attends 700pieds, descend à 50
+remonte et redescend pour rasé le sol à 0 sans crasher
+continue vers l'infini et plus loin encore

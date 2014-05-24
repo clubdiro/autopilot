@@ -1,6 +1,6 @@
 #! /usr/bin/python
 
-# File: autopilot-aller-retour.py
+# File: autopilot-landing.py
 
 
 from collections import deque
@@ -383,9 +383,9 @@ def fly():
 
     controls.flap = 0.75 # more flaps
 
-    while instruments.alt_agl > 200:
+    while instruments.alt_agl > 250:
         err = hding_diff(instruments.hding_true, takeoff_hding)
-        turn(-err, 0.30)
+        turn(-err, 0.29)
         maintain()
     
     print 'increase landing flare'
@@ -395,16 +395,16 @@ def fly():
     controls.thro3 = 0
     controls.thro4 = 0
 
-    while instruments.alt_agl > 100:
+    while instruments.alt_agl > 120:
         err = hding_diff(instruments.hding_true, takeoff_hding)
-        turn(-err, 0.32)
+        turn(-err, 0.31)
         maintain()
 
     print 'finish landing flare'
 
-    while instruments.alt_agl > 50:
+    while instruments.alt_agl > 60:
         err = hding_diff(instruments.hding_true, takeoff_hding)
-        turn(-err, 0.34)
+        turn(-err, 0.33)
         maintain()
 
     print 'wait for landing'

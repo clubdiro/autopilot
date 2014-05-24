@@ -22,11 +22,11 @@ class LatLon:
 
         self.lat = lat
         self.lon = lon
-        self.radius = 6371
+        self.radius = 20925524.9 # feet
 
     def distance(self, other):
 
-        # Returns the distance from this point to the
+        # Returns the distance in feet from this point to the
         # other point using Haversine formula
 
         # other: the LatLon to compute distance with
@@ -63,6 +63,29 @@ class LatLon:
         theta = math.atan2(y, x)
 
         return rad2deg(theta) % 360
+
+    def destination(self, brng, dist):
+
+        # Returns the point (LatLon) at a certain bearing
+        # and distance from this point
+
+        # brng: the bearing
+        # dist: the distance in feet
+
+        theta = deg2rad(brng)
+        d = dist / self.radius # angular distance in radians
+
+        phi1 = deg2rad(self.lat)
+        lambda1 = deg2rad(self.lon)
+
+        phi2 = math.asin(math.sin(phi1)*math.cos(d) + \
+                         math.cos(phi1)*math.sin(d)*math.cos(theta))
+        lambda2 = lambda1 + \
+                  math.atan2(math.sin(theta)*math.sin(d)*math.cos(phi1), \
+                             math.cos(d)-math.sin(phi1)*math.sin(phi2))
+        lambda2 = (lambda2+3*math.pi) % (2*math.pi) - math.pi # normalise to -180..+180
+
+        return LatLon(rad2deg(phi2), rad2deg(lambda2))
 
 
 # Creates a location on the earth (altitude / latitude / longitude)

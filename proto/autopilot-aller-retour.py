@@ -355,12 +355,12 @@ def fly():
         turn(-err, 0)
         maintain()
 
-    print 'lower landing gears, apply flaps and turn onto final approach'
+    print 'apply flaps and turn onto final approach'
 
-    controls.thro1 = 0.16 # ease off on throttle
-    controls.thro2 = 0.16
-    controls.thro3 = 0.16
-    controls.thro4 = 0.16
+    controls.thro1 = 0.14 # ease off on throttle
+    controls.thro2 = 0.14
+    controls.thro3 = 0.14
+    controls.thro4 = 0.14
 
     controls.flap = 0.4 # partial flaps
 
@@ -368,7 +368,7 @@ def fly():
         turn(-29, -0.2)
         maintain()
 
-    print 'descend to runway'
+    print 'lower landing gears and descend to runway'
 
     controls.gear = 1 # lower landing gear
 
@@ -381,11 +381,11 @@ def fly():
     
     print 'start landing flare'
 
-    controls.flap = 0.7 # more flaps
+    controls.flap = 0.75 # more flaps
 
     while instruments.alt_agl > 200:
         err = hding_diff(instruments.hding_true, takeoff_hding)
-        turn(-err, 0.18)
+        turn(-err, 0.30)
         maintain()
     
     print 'increase landing flare'
@@ -397,21 +397,21 @@ def fly():
 
     while instruments.alt_agl > 100:
         err = hding_diff(instruments.hding_true, takeoff_hding)
-        turn(-err, 0.20)
+        turn(-err, 0.32)
         maintain()
 
     print 'finish landing flare'
 
     while instruments.alt_agl > 50:
         err = hding_diff(instruments.hding_true, takeoff_hding)
-        turn(-err, 0.25)
+        turn(-err, 0.34)
         maintain()
 
     print 'wait for landing'
 
     while instruments.alt_agl > 2:
         err = hding_diff(instruments.hding_true, takeoff_hding)
-        turn(-err, 0.25)
+        turn(-err, 0.39)
         maintain()
 
     print 'apply speed brakes'
@@ -420,7 +420,7 @@ def fly():
 
     while instruments.kias > 120:
         err = hding_diff(instruments.hding_true, takeoff_hding)
-        turn(-err, 0.30)
+        turn(-err, 0.39)
         maintain()
 
     print 'apply wheel brakes'
@@ -431,7 +431,7 @@ def fly():
 
     while True:
         err = hding_diff(instruments.hding_true, takeoff_hding)
-        turn(-err, 0.40)
+        turn(-err, 0.39)
         maintain()
     
 if __name__ == '__main__':

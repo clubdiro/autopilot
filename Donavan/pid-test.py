@@ -293,7 +293,7 @@ def takeoffheading_PID(): # rudder
 
 def steer_PID(): # rudder 
     Pu = instruments.time_delta*3000  #set constants here
-    Ku = 0.026                        #set constants here
+    Ku = 0.018                        #set constants here
     Kp = (0.6*Ku)
     Ki = (2*Kp)/Pu 
     Kd = (Kp*Pu)/8
